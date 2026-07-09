@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مساعد التعبير الكتابي</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <button class="back" id="backBtn" onclick="goBack()" style="visibility:hidden">&lsaquo; رجوع</button>
+    <div class="progress-dots" id="dots">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="brand">مساعد التعبير الكتابي</span>
+  </header>
+
+  <main>
+
+    <!-- SCREEN 1: grade -->
+    <section class="screen active" data-screen="grade">
+      <div class="eyebrow">الخطوة ١ من ٥</div>
+      <h1 class="page-title">اختر صفك الدراسي</h1>
+      <p class="page-sub">سنعرض لك المواضيع والوحدات المناسبة لصفك.</p>
+      <div class="card-grid" id="gradeGrid"><!-- injected --></div>
+    </section>
+
+    <!-- SCREEN 2: semester -->
+    <section class="screen" data-screen="semester">
+      <div class="eyebrow">الخطوة ٢ من ٥ — <span id="gradeLabel"></span></div>
+      <h1 class="page-title">اختر الفصل الدراسي</h1>
+      <p class="page-sub">حدد الفصل الذي تريد التدرب على مواضيعه.</p>
+      <div class="card-grid" id="semesterGrid"><!-- injected --></div>
+    </section>
+
+    <!-- SCREEN 3: units -->
+    <section class="screen" data-screen="units">
+      <div class="eyebrow">الخطوة ٣ من ٥</div>
+      <h1 class="page-title">وحدات الفصل الدراسي</h1>
+      <p class="page-sub">اختر مهمة كتابية للبدء.</p>
+      <div class="unit-list" id="unitList"><!-- injected --></div>
+    </section>
+
+    <!-- SCREEN 4: task detail -->
+    <section class="screen" data-screen="task">
+      <div class="eyebrow">الخطوة ٤ من ٥ — <span id="taskUnitLabel"></span></div>
+      <h1 class="page-title">المهمة الكتابية</h1>
+      <p class="page-sub">اقرأ وصف المهمة جيدًا قبل البدء بالكتابة.</p>
+      <div class="task-card" id="taskCard"><!-- injected --></div>
+      <div class="actions-row">
+        <span></span>
+        <button class="btn btn-primary" onclick="goto('writing')">ابدأ الكتابة &lsaquo;</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 5: writing -->
+    <section class="screen" data-screen="writing">
+      <div class="intro-stage" id="introStage">
+        <svg viewBox="0 0 240 100"><text x="120" y="65" text-anchor="middle" font-family="Cairo" font-size="46"
+            font-weight="800" class="path">تعبير</text></svg>
+        <div class="intro-caption">لنكتب شيئًا جميلًا اليوم…</div>
+      </div>
+      <div id="writingArea" style="display:none">
+        <div class="eyebrow">الخطوة ٥ من ٥</div>
+        <h1 class="page-title">اكتب مقالك</h1>
+        <p class="page-sub">خذ وقتك، ويمكنك مراجعة التوجيهات في أي لحظة.</p>
+        <details class="brief-toggle">
+          <summary>عرض التخطيط والإرشادات الكاملة &#8964;</summary>
+          <div class="brief-body" id="briefBody"><!-- injected: planning + guidelines --></div>
+        </details>
+        <div class="writing-box">
+          <textarea id="essay" placeholder="ابدأ الكتابة هنا…"></textarea>
+          <div class="writing-footer">
+            <span id="wordCount">٠ كلمة</span>
+            <span class="hint" id="minWordsHint"></span>
+          </div>
+        </div>
+        <div class="actions-row">
+          <span class="hint" id="hintMsg">أضف المزيد من الكلمات لإتمام المقال</span>
+          <!-- NEW: Added type="button" -->
+          <button type="button" class="btn btn-primary" id="submitBtn" disabled onclick="submitEssay()">إرسال للتقييم
+            &lsaquo;</button>
+        </div>
+        <p class="hint" id="errorMsg" style="display:none;color:#C24B4B;margin-top:10px;"></p>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: results -->
+    <section class="screen" data-screen="results">
+      <div class="score-header">
+        <div class="score-badge" id="scoreBadge">--%</div>
+        <div>
+          <div class="band" id="scoreBand">--</div>
+          <p id="overallComment">...</p>
+        </div>
+      </div>
+      <div class="section-title">التقييم حسب المعايير</div>
+      <div class="criteria-grid" id="criteriaGrid"></div>
+      <div class="section-title">الأخطاء اللغوية</div>
+      <div class="mistake-groups" id="mistakeGroups"></div>
+      <div id="mistakesList"></div>
+      <div class="section-title">نسخة محسّنة من فقرتك</div>
+      <div class="improved-box" id="improvedParagraph"></div>
+      <div class="results-actions">
+        <button class="btn btn-primary" onclick="restartWriting()">أعد الكتابة وحسّن مقالك</button>
+        <button class="btn btn-ghost" onclick="window.print()">تنزيل التقرير (PDF)</button>
+        <button class="btn btn-ghost" onclick="goto('grade')">مهمة جديدة</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+    <div class="spinner"></div>
+    <div class="loading-text">جاري تقييم مقالك…</div>
+    <div class="loading-tip">هل تعلم؟ استخدام أدوات الربط مثل «لذلك» و«بينما» يقوّي تماسك الفقرة.</div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
