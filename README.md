@@ -46,12 +46,16 @@ available any time a student wants to practice.
 
 ```
 essay-assistant/
-├── index.html        # The app's pages/screens
-├── style.css          # All styling (incl. dark mode)
-├── script.js          # Frontend logic
-├── server.py          # FastAPI backend
-├── fanar.py           # Talks to the Fanar AI model
-└── content.json       # All writing tasks and rubrics
+├── backend/
+│   ├── server.py          # FastAPI backend
+│   ├── fanar.py           # Talks to the Fanar AI model
+│   ├── content.json       # All writing tasks and rubrics
+│   └── requirements.txt   # Python dependencies
+└── frontend/
+    ├── index.html         # The app's pages/screens
+    ├── script.js          # Frontend logic
+    ├── style.css          # All styling (incl. dark mode)
+    └── favicon.svg        # Browser tab icon
 ```
 
 ## 🚀 Getting Started
@@ -66,10 +70,12 @@ source venv/bin/activate   # on Windows: venv\Scripts\activate
 **2. Install the dependencies:**
 
 ```bash
-pip install fastapi uvicorn requests pydantic
+pip install -r backend/requirements.txt
 ```
 
 **3. Add your Fanar API key:**
+
+Don't have one yet? Request one here: https://api.fanar.qa/request/en
 
 ```bash
 export FANAR_API_KEY="your_key_here"
@@ -78,9 +84,10 @@ export FANAR_API_KEY="your_key_here"
 **4. Run the backend:**
 
 ```bash
+cd backend
 python server.py
 ```
 
 **5. Open the app:**
 
-Just open `index.html` in your browser. That's it, you're ready to write!
+Just open `frontend/index.html` in your browser. That's it, you're ready to write!
