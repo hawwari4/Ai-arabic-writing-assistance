@@ -3,6 +3,9 @@ const API_BASE = "http://localhost:5000";
 const state = { content: null, grade: null, semester: null, task: null };
 const history = ['grade'];
 const MIN_WORDS_DEFAULT = 100;
+const HISTORY_KEY = 'essayHistory';
+const THEME_KEY = 'theme';
+const MAX_SCORE = 5;
 
 // ---------- tiny Markdown renderer ----------
 function renderMarkdown(md) {
@@ -17,7 +20,7 @@ function renderMarkdown(md) {
     const h = line.match(/^(#{1,3})\s+(.*)/);
     if (h) {
       if (inList) { html += '</ul>'; inList = false; }
-      const level = h[1].length + 2; 
+      const level = h[1].length + 2;
       html += `<h${level}>${inlineMd(h[2])}</h${level}>`;
       continue;
     }
@@ -55,17 +58,75 @@ async function callEvaluationAPI(grade, semester, taskId, studentText) {
       student_text: studentText
     })
   });
-  
+
   if (!response.ok) {
     const errBody = await response.json().catch(() => ({}));
     const errorMsg = errBody.detail || `Server responded with ${response.status}`;
     console.error("API Error:", errorMsg);
     throw new Error(errorMsg);
   }
-  
+
   const data = await response.json();
   console.log("Evaluation API response:", data);
   return data;
+}
+
+// ---------- Theme (dark mode) ----------
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'dark') document.body.classList.add('dark');
+  updateThemeIcon();
+}
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem(THEME_KEY, document.body.classList.contains('dark') ? 'dark' : 'light');
+  updateThemeIcon();
+}
+function updateThemeIcon() {
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+}
+
+// ---------- History (localStorage) ----------
+function saveToHistory(title, pct, band) {
+  const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  list.unshift({ id, title, pct, band, date: new Date().toISOString() });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 20)));
+}
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const clearBtn = document.getElementById('clearHistoryBtn');
+  if (!el) return;
+  const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  if (clearBtn) clearBtn.style.display = list.length === 0 ? 'none' : 'inline-flex';
+  if (list.length === 0) {
+    el.innerHTML = '<p class="hint">لا يوجد سجل تقييمات بعد.</p>';
+    return;
+  }
+  el.innerHTML = list.map(h => {
+    const d = new Date(h.date);
+    const dateStr = d.toLocaleDateString('ar-EG');
+    return `<div class="history-item" data-id="${h.id}">
+      <span class="history-title">${h.title}</span>
+      <span class="history-pct">${h.pct}%</span>
+      <span class="history-date">${dateStr}</span>
+      <button class="history-delete" title="حذف هذه المحاولة" onclick="deleteHistoryItem('${h.id}')">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteHistoryItem(id) {
+  const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  const updated = list.filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+  renderHistory();
+}
+
+function clearAllHistory() {
+  if (!confirm('هل أنت متأكد من مسح كل سجل التقييمات؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
 }
 
 // ---------- UI Logic ----------
@@ -78,8 +139,53 @@ function scoreBand(total, max) {
   return { label: 'بحاجة إلى تحسين', pct: Math.round(pct * 100) };
 }
 
+function toggleCriterionDetail(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  btn.classList.toggle('open', isHidden);
+  btn.textContent = isHidden
+    ? 'إخفاء التفاصيل'
+    : 'لماذا لم أحصل على الدرجة الكاملة؟ عرض التفاصيل والأمثلة \u2304';
+}
+
+function renderVocabSuggestions(list) {
+  const container = document.getElementById('vocabList');
+  const emptyHint = document.getElementById('vocabEmptyHint');
+  if (!container) return;
+  const items = Array.isArray(list) ? list : [];
+  if (items.length === 0) {
+    container.innerHTML = '';
+    if (emptyHint) emptyHint.style.display = 'block';
+    return;
+  }
+  if (emptyHint) emptyHint.style.display = 'none';
+  container.innerHTML = items.map(v => {
+    const alts = (v.alternatives || []).map(a => `<span class="vocab-alt">${a}</span>`).join('');
+    return `<div class="vocab-item">
+      <div class="vocab-word-row">
+        <mark class="vocab-word">${v.word}</mark>
+        ${v.context ? `<span class="vocab-context">"${v.context}"</span>` : ''}
+      </div>
+      <div class="vocab-alts">
+        <span class="vocab-arrow">بدائل أقوى:</span>
+        ${alts}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getWeight(criterionName) {
+  const rubric = (state.task && state.task.rubric) || [];
+  const item = rubric.find(r => r.name === criterionName);
+  return item ? item.weight : 1;
+}
+
+// task detail is part of step 3 (choosing/reading the unit), so it shares
+// a dot with "units"; results shares the final dot with "writing".
 function renderDots(screen) {
-  const dotsIdx = { grade: 0, semester: 1, units: 2, task: 3, writing: 4, results: 4 }[screen];
+  const dotsIdx = { grade: 0, semester: 1, units: 2, task: 2, writing: 3, results: 3 }[screen];
   document.querySelectorAll('#dots span').forEach((d, i) => d.classList.toggle('active', i <= dotsIdx));
 }
 
@@ -88,7 +194,16 @@ function goto(screen, push = true) {
   document.querySelector(`[data-screen="${screen}"]`).classList.add('active');
   renderDots(screen);
   document.getElementById('backBtn').style.visibility = screen === 'grade' ? 'hidden' : 'visible';
-  if (push) history.push(screen);
+
+  if (push) {
+    // starting a brand-new task flow from the grade screen resets the trail
+    if (screen === 'grade') {
+      history.length = 0;
+      history.push('grade');
+    } else if (history[history.length - 1] !== screen) {
+      history.push(screen);
+    }
+  }
 
   if (screen === 'writing') {
     document.getElementById('introStage').style.display = 'flex';
@@ -188,11 +303,11 @@ function renderBrief() {
     <b>الإرشادات:</b>
     ${renderMarkdown(task.guidelines)}`;
   document.getElementById('minWordsHint').textContent = `الحد الأدنى المقترح: ${minWords()} كلمة`;
+  document.getElementById('writingTaskTitle').textContent = task.title;
 }
 
 function renderTaskScreen() {
   const task = state.task;
-  document.getElementById('taskUnitLabel').textContent = task.title;
   document.getElementById('taskCard').innerHTML = `
     <span class="tag">${task.type || 'مهمة كتابية'}</span>
     <h2>${task.title}</h2>
@@ -209,6 +324,14 @@ function countWords(text) {
   return (text.trim().match(/[\u0600-\u06FF\w]+/g) || []).length;
 }
 
+function updateProgressBar(words, min) {
+  const fill = document.getElementById('progressBarFill');
+  if (!fill) return;
+  const pct = Math.min(100, Math.round((words / min) * 100));
+  fill.style.width = pct + '%';
+  fill.classList.toggle('complete', words >= min);
+}
+
 function updateCount() {
   const textarea = document.getElementById('essay');
   const words = countWords(textarea.value);
@@ -222,10 +345,12 @@ function updateCount() {
   hintMsg.textContent = words < min
     ? `أضف ${min - words} كلمة أخرى على الأقل لإتمام المقال`
     : 'مقالك جاهز للإرسال ✓';
+  updateProgressBar(words, min);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('essay').addEventListener('input', updateCount);
+  initTheme();
   init();
 });
 
@@ -239,8 +364,7 @@ async function submitEssay() {
   const essayText = document.getElementById('essay').value;
   const errorMsg = document.getElementById('errorMsg');
   errorMsg.style.display = 'none';
-  
-  // FIX: Use style.display instead of .hidden to override inline style="display:none;"
+
   const loadingOverlay = document.getElementById('loadingOverlay');
   loadingOverlay.style.display = 'flex';
 
@@ -251,14 +375,14 @@ async function submitEssay() {
     goto('results');
   } catch (err) {
     loadingOverlay.style.display = 'none';
-    
+
     let userMsg = 'تعذّر الاتصال بخدمة التقييم. تأكد من تشغيل الخادم (server.py) ثم حاول مرة أخرى.';
     if (err.message.includes('JSON') || err.message.includes('لم يتم العثور')) {
       userMsg = 'حدث خطأ في معالجة المقال بواسطة النموذج. يرجى إعادة المحاولة أو تغيير صياغة المقال.';
     } else if (err.message.includes('502') || err.message.includes('500')) {
       userMsg = 'حدث خطأ في الخادم. يرجى المحاولة لاحقًا.';
     }
-    
+
     errorMsg.textContent = userMsg;
     errorMsg.style.display = 'block';
     console.error('Evaluation request failed:', err);
@@ -268,9 +392,15 @@ async function submitEssay() {
 function renderResults(data) {
   const scores = data.scores || {};
   const keys = Object.keys(scores);
-  const total = keys.reduce((sum, k) => sum + (scores[k] || 0), 0);
-  const max = keys.length * 3;
-  const band = scoreBand(total, max);
+
+  let totalWeighted = 0;
+  let maxWeighted = 0;
+  keys.forEach(k => {
+    const weight = getWeight(k);
+    totalWeighted += (scores[k] || 0) * weight;
+    maxWeighted += MAX_SCORE * weight;
+  });
+  const band = scoreBand(totalWeighted, maxWeighted);
 
   document.getElementById('scoreBadge').textContent = band.pct + '%';
   document.getElementById('scoreBand').textContent = 'التقييم العام: ' + band.label;
@@ -278,11 +408,33 @@ function renderResults(data) {
 
   const grid = document.getElementById('criteriaGrid');
   grid.innerHTML = '';
-  keys.forEach(name => {
+  keys.forEach((name, idx) => {
     const score = scores[name] || 0;
-    const dots = [1, 2, 3].map(i => `<span class="${i <= score ? 'filled' : ''}"></span>`).join('');
-    const fb = (data.feedback && data.feedback[name]) || 'لا يوجد تعليق';
-    grid.innerHTML += `<div class="criterion"><div class="criterion-top"><span class="criterion-name">${name}</span><div class="dots">${dots}</div></div><div class="criterion-fb">${fb}</div></div>`;
+    const dots = Array.from({ length: MAX_SCORE }, (_, i) => i + 1)
+      .map(i => `<span class="${i <= score ? 'filled' : ''}"></span>`).join('');
+    const fbEntry = (data.feedback && data.feedback[name]) || {};
+    const comment = typeof fbEntry === 'string' ? fbEntry : (fbEntry.comment || 'لا يوجد تعليق');
+    const example = typeof fbEntry === 'object' ? (fbEntry.example || '') : '';
+    const detail = typeof fbEntry === 'object' ? (fbEntry.detail || '') : '';
+    const detailId = `criterionDetail_${idx}`;
+    const hasMore = score < MAX_SCORE && (example || detail);
+
+    grid.innerHTML += `
+      <div class="criterion">
+        <div class="criterion-top">
+          <span class="criterion-name">${name}</span>
+          <div class="dots">${dots}</div>
+        </div>
+        <div class="criterion-fb">${comment}</div>
+        ${hasMore ? `
+          <button type="button" class="detail-toggle" onclick="toggleCriterionDetail('${detailId}', this)">
+            لماذا لم أحصل على الدرجة الكاملة؟ عرض التفاصيل والأمثلة &#8964;
+          </button>
+          <div class="criterion-detail" id="${detailId}" style="display:none;">
+            ${example ? `<div class="criterion-example"><b>من نصك:</b> ${example}</div>` : ''}
+            ${detail ? `<div class="criterion-detail-text">${detail}</div>` : ''}
+          </div>` : ''}
+      </div>`;
   });
 
   const mistakes = data.mistakes || [];
@@ -296,7 +448,12 @@ function renderResults(data) {
     list.innerHTML += `<div class="mistake-item"><span class="mistake-tag">${m.type}</span><br><span class="orig">${m.original}</span> ← <span class="fix">${m.correction}</span><div class="expl">${m.explanation}</div></div>`;
   });
 
+  renderVocabSuggestions(data.vocabulary_suggestions);
+
   document.getElementById('improvedParagraph').textContent = data.improved_paragraph || 'لم يتم تقديم نسخة محسّنة.';
+
+  saveToHistory(state.task.title, band.pct, band.label);
+  renderHistory();
 }
 
 async function init() {

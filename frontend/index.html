@@ -14,16 +14,17 @@
   <header class="topbar">
     <button class="back" id="backBtn" onclick="goBack()" style="visibility:hidden">&lsaquo; رجوع</button>
     <div class="progress-dots" id="dots">
-      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
     </div>
     <span class="brand">مساعد التعبير الكتابي</span>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="تبديل الوضع الداكن">🌙</button>
   </header>
 
   <main>
 
     <!-- SCREEN 1: grade -->
     <section class="screen active" data-screen="grade">
-      <div class="eyebrow">الخطوة ١ من ٥</div>
+      <div class="eyebrow">الخطوة ١ من ٤</div>
       <h1 class="page-title">اختر صفك الدراسي</h1>
       <p class="page-sub">سنعرض لك المواضيع والوحدات المناسبة لصفك.</p>
       <div class="card-grid" id="gradeGrid"><!-- injected --></div>
@@ -31,7 +32,7 @@
 
     <!-- SCREEN 2: semester -->
     <section class="screen" data-screen="semester">
-      <div class="eyebrow">الخطوة ٢ من ٥ — <span id="gradeLabel"></span></div>
+      <div class="eyebrow">الخطوة ٢ من ٤ — <span id="gradeLabel"></span></div>
       <h1 class="page-title">اختر الفصل الدراسي</h1>
       <p class="page-sub">حدد الفصل الذي تريد التدرب على مواضيعه.</p>
       <div class="card-grid" id="semesterGrid"><!-- injected --></div>
@@ -39,7 +40,7 @@
 
     <!-- SCREEN 3: units -->
     <section class="screen" data-screen="units">
-      <div class="eyebrow">الخطوة ٣ من ٥</div>
+      <div class="eyebrow">الخطوة ٣ من ٤</div>
       <h1 class="page-title">وحدات الفصل الدراسي</h1>
       <p class="page-sub">اختر مهمة كتابية للبدء.</p>
       <div class="unit-list" id="unitList"><!-- injected --></div>
@@ -47,7 +48,6 @@
 
     <!-- SCREEN 4: task detail -->
     <section class="screen" data-screen="task">
-      <div class="eyebrow">الخطوة ٤ من ٥ — <span id="taskUnitLabel"></span></div>
       <h1 class="page-title">المهمة الكتابية</h1>
       <p class="page-sub">اقرأ وصف المهمة جيدًا قبل البدء بالكتابة.</p>
       <div class="task-card" id="taskCard"><!-- injected --></div>
@@ -65,13 +65,17 @@
         <div class="intro-caption">لنكتب شيئًا جميلًا اليوم…</div>
       </div>
       <div id="writingArea" style="display:none">
-        <div class="eyebrow">الخطوة ٥ من ٥</div>
+        <div class="writing-task-title" id="writingTaskTitle"></div>
+        <div class="eyebrow">الخطوة ٤ من ٤</div>
         <h1 class="page-title">اكتب مقالك</h1>
         <p class="page-sub">خذ وقتك، ويمكنك مراجعة التوجيهات في أي لحظة.</p>
         <details class="brief-toggle">
           <summary>عرض التخطيط والإرشادات الكاملة &#8964;</summary>
           <div class="brief-body" id="briefBody"><!-- injected: planning + guidelines --></div>
         </details>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
         <div class="writing-box">
           <textarea id="essay" placeholder="ابدأ الكتابة هنا…"></textarea>
           <div class="writing-footer">
@@ -81,7 +85,6 @@
         </div>
         <div class="actions-row">
           <span class="hint" id="hintMsg">أضف المزيد من الكلمات لإتمام المقال</span>
-          <!-- NEW: Added type="button" -->
           <button type="button" class="btn btn-primary" id="submitBtn" disabled onclick="submitEssay()">إرسال للتقييم
             &lsaquo;</button>
         </div>
@@ -103,8 +106,16 @@
       <div class="section-title">الأخطاء اللغوية</div>
       <div class="mistake-groups" id="mistakeGroups"></div>
       <div id="mistakesList"></div>
+      <div class="section-title">اقتراحات لإثراء المفردات</div>
+      <p class="hint" id="vocabEmptyHint" style="display:none;">لم يتم رصد كلمات تحتاج إلى تنويع في هذا المقال.</p>
+      <div class="vocab-list" id="vocabList"></div>
       <div class="section-title">نسخة محسّنة من فقرتك</div>
       <div class="improved-box" id="improvedParagraph"></div>
+      <div class="section-title-row">
+        <div class="section-title">سجل تقييماتك السابقة</div>
+        <button class="btn-clear-history" id="clearHistoryBtn" onclick="clearAllHistory()" title="مسح كل السجل">مسح السجل</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
       <div class="results-actions">
         <button class="btn btn-primary" onclick="restartWriting()">أعد الكتابة وحسّن مقالك</button>
         <button class="btn btn-ghost" onclick="window.print()">تنزيل التقرير (PDF)</button>

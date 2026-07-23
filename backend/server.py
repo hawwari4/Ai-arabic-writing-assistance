@@ -62,14 +62,13 @@ async def evaluate(request_data: EvaluationRequest):
     except HTTPException as e:
         logger.error(f"Task lookup failed: {e.detail}")
         raise
-    
+
     try:
         result = fanar.evaluate_essay(task, request_data.student_text)
         logger.info("Evaluation completed successfully.")
         return result
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")
-        # Return the actual error message to the frontend for better debugging
         raise HTTPException(status_code=502, detail=str(e))
 
 if __name__ == "__main__":

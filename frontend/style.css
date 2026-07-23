@@ -106,3 +106,144 @@ textarea{width:100%;min-height:280px;border:none;outline:none;padding:20px;font-
 .task-card hr, .brief-body hr{border:none;border-top:1px solid var(--line);margin:14px 0;}
 .brief-body > b{display:block;font-family:'Cairo',sans-serif;color:var(--teal-dark);margin:12px 0 4px;}
 .brief-body > b:first-child{margin-top:0;}
+
+/* ============================================================
+   ADDITIONS: dark mode, progress bar, weighted criteria,
+   mistake examples, and evaluation history.
+   Existing rules above are untouched.
+   ============================================================ */
+
+/* ---------- Dark mode ---------- */
+body.dark{
+  --ink:#EDEEF0; --paper:#12181F; --teal:#3FA69E; --teal-dark:#2C8981;
+  --amber:#E8B15D; --line:#2A333D; --soft:#1B232C; --danger:#E07272;
+}
+body.dark .pick-card,
+body.dark .unit-row,
+body.dark .task-card,
+body.dark .writing-box,
+body.dark textarea,
+body.dark .criterion,
+body.dark .mistake-item,
+body.dark .improved-box,
+body.dark .history-item{
+  background:#1B232C;
+  color:var(--ink);
+}
+body.dark .loading-overlay{background:rgba(18,24,31,.97);}
+body.dark .unit-row.locked .unit-badge,
+body.dark .unit-row.locked .chip{background:#232C36;color:#7A8290;}
+
+/* muted grays are too low-contrast on a dark background — lighten them */
+body.dark .page-sub,
+body.dark .task-card p,
+body.dark .criterion-fb,
+body.dark .criterion-detail-text,
+body.dark .mistake-item .expl,
+body.dark .history-date,
+body.dark .loading-tip,
+body.dark .unit-note,
+body.dark .vocab-context,
+body.dark .vocab-arrow{
+  color:#A9B2BD;
+}
+body.dark .brief-body{color:#C7CDD5;}
+body.dark .brand{opacity:.7;}
+body.dark .score-header{background:linear-gradient(135deg,#2C8981,#173F3C);color:#F3FBFA;}
+body.dark .btn-ghost{color:var(--ink);border-color:var(--line);}
+body.dark .btn-ghost:hover{background:var(--soft);}
+body.dark .dots span{background:#2A333D;}
+body.dark textarea::placeholder{color:#5A6572;}
+body.dark .vocab-word{background:#E8B15D;color:#2A1F08;}
+body.dark .history-delete{background:#232C36;}
+body.dark .btn-clear-history{border-color:#3A2A2A;}
+body.dark .theme-toggle{border-color:var(--line);color:var(--ink);}
+
+.theme-toggle{
+  background:none;border:1px solid var(--line);border-radius:10px;
+  width:36px;height:36px;cursor:pointer;font-size:15px;line-height:1;
+  margin-inline-start:12px;flex-shrink:0;
+}
+.theme-toggle:hover{background:var(--soft);}
+
+/* ---------- Progress bar (word count toward minimum) ---------- */
+.progress-bar-wrap{
+  height:8px;background:var(--soft);border-radius:999px;
+  overflow:hidden;margin-bottom:14px;
+}
+.progress-bar-fill{
+  height:100%;width:0%;background:var(--teal);
+  transition:width .2s ease,background .2s ease;border-radius:999px;
+}
+.progress-bar-fill.complete{background:var(--amber);}
+
+/* ---------- Writing screen task title ---------- */
+.writing-task-title{
+  font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;
+  color:var(--teal-dark);margin-bottom:6px;
+}
+
+/* ---------- Mistake location example ---------- */
+.criterion-example{
+  font-size:13px;color:var(--danger);margin-top:8px;
+  background:var(--soft);padding:9px 12px;border-radius:8px;line-height:1.8;
+}
+
+/* ---------- Evaluation history ---------- */
+.section-title-row{display:flex;align-items:center;justify-content:space-between;margin:30px 0 14px;gap:12px;}
+.section-title-row .section-title{margin:0;}
+.btn-clear-history{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'Cairo',sans-serif;font-weight:700;font-size:12.5px;
+  background:none;border:1px solid var(--line);color:var(--danger);
+  border-radius:999px;padding:6px 14px;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+.btn-clear-history:hover{background:var(--soft);border-color:var(--danger);}
+
+.history-list{display:flex;flex-direction:column;gap:8px;}
+.history-item{
+  position:relative;display:flex;align-items:center;gap:14px;background:#fff;
+  border:1px solid var(--line);border-radius:12px;
+  padding:10px 44px 10px 16px;font-size:13px;
+}
+.history-title{font-family:'Cairo',sans-serif;font-weight:700;flex:1;}
+.history-pct{font-family:'Cairo',sans-serif;font-weight:800;color:var(--teal-dark);}
+.history-date{color:#8A93A0;font-size:12px;}
+.history-delete{
+  position:absolute;inset-inline-start:8px;top:50%;transform:translateY(-50%);
+  width:26px;height:26px;border-radius:50%;border:none;background:var(--soft);
+  color:var(--danger);font-size:16px;line-height:1;cursor:pointer;
+  opacity:0;transition:opacity .15s ease,background .15s ease;
+}
+.history-item:hover .history-delete{opacity:1;}
+.history-delete:hover{background:var(--danger);color:#fff;}
+
+/* ---------- Vocabulary enrichment suggestions ---------- */
+.vocab-list{display:flex;flex-direction:column;gap:10px;}
+.vocab-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+.vocab-word-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.vocab-word{
+  background:var(--amber);color:#3A2A0E;padding:2px 10px;border-radius:6px;
+  font-family:'Cairo',sans-serif;font-weight:800;font-size:13.5px;
+}
+.vocab-context{color:#8A93A0;font-size:13px;font-style:normal;}
+.vocab-alts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;}
+.vocab-arrow{color:#5B6673;font-family:'Cairo',sans-serif;font-weight:700;font-size:12.5px;}
+.vocab-alt{
+  background:var(--soft);color:var(--teal-dark);font-weight:700;
+  padding:4px 11px;border-radius:999px;font-size:12.5px;
+}
+
+/* ---------- Criterion "why not full score" details ---------- */
+.detail-toggle{
+  display:inline-block;margin-top:10px;background:none;border:none;padding:0;
+  color:var(--teal-dark);font-family:'Cairo',sans-serif;font-weight:700;
+  font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;
+}
+.detail-toggle.open{color:var(--danger);}
+.criterion-detail{margin-top:10px;}
+.criterion-detail-text{
+  font-size:13px;color:#5B6673;line-height:1.9;margin-top:8px;
+  background:var(--soft);padding:10px 12px;border-radius:8px;
+}
